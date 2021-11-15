@@ -1,0 +1,60 @@
+---
+title: "Pokemon Dataset"
+author: "Hasan Arcas"
+date: "13/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+### Some data taken and processed by using a 801x44 dataset about pokemons.
+
+```{r load_data}
+pokemon <- read.csv("./datasets/pokemon.csv")
+head(pokemon)
+
+```
+
+### But we have some problems with the dataset, there is too much unneccessary attributes, and our attributes types (int, chr...) are not shown, let's fix that
+
+```{r data_preparation}
+pokemon_df <- as_tibble(select(pokemon, pokedex_number, name, type1, attack, defense, hp, generation, is_legendary))
+
+sorted_non_legendary_first_and_second_generation <- pokemon_df %>%
+  filter(is_legendary==0 & (generation==1 | generation==2)) %>%
+  mutate(total_points = attack + defense + hp) %>%
+  arrange(desc(total_points))
+
+sorted_non_legendary_first_and_second_generation
+```
+
+### This looks much better than before, we have eliminated most of the columns, we have selected just the non legendary pokemons who are in the first or the second generation and we have even added a new column to reach the total points of each pokemon, in order to sort them by their total points. Next thing to do is to create some plots...
+
+
+### Let's see how many pokemon belong to each type
+```{r plot1}
+ggplot(sorted_non_legendary_first_and_second_generation) +
+  geom_bar(mapping=aes(x = type1, fill= type1))
+```
+
+
+### Now, let's see if there is a correlation between attack points and the total points
+
+
+```{r plot2}
+ggplot(sorted_non_legendary_first_and_second_generation) +
+  geom_point(mapping=aes(x= attack, y=total_points))
+```
+
+### As we could have predicted, there is a positive correlation between attack and total points, but there are some pokemon that have really low attack points, but decent total points.
+
+
+```{r plot3}
+ggplot(sorted_non_legendary_first_and_second_generation) +
+  geom_point(mapping=aes(x= attack, y=total_points, color=hp))
+```
+
+### By giving a color to each pokemon based on their hp (health points), we can see that the exceptions are pokemons with high hp.
