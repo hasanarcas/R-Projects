@@ -70,3 +70,20 @@ featurePlot(x = trainData[, 1:18],
                           y = list(relation="free")))
 
 
+
+set.seed(100)
+options(warn=-1)
+
+subsets <- c( 15, 18)
+
+ctrl <- rfeControl(functions = rfFuncs,
+                   method = "repeatedcv",
+                   repeats = 2,
+                   verbose = FALSE)
+
+lmProfile <- rfe(x=trainData[, 1:18], y=as.factor(trainData$Purchase),
+                 sizes = subsets,
+                 rfeControl = ctrl)
+
+lmProfile
+
