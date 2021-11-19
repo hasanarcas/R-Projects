@@ -87,3 +87,12 @@ lmProfile <- rfe(x=trainData[, 1:18], y=as.factor(trainData$Purchase),
 
 lmProfile
 
+
+# Set the seed for reproducibility
+set.seed(10)
+
+# Train the model using randomForest and predict on the training data itself.
+model_mars = train(Purchase ~ ., data=trainData, method='earth')
+fitted <- predict(model_mars)
+model_mars
+plot(model_mars, main="Model Accuracies with MARS")
