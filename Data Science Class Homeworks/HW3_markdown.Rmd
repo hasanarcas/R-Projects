@@ -1,0 +1,101 @@
+---
+title: <span style="color:red">HW3 Markdown</span>
+author: "Hasan Arcas"
+date: "11/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message=FALSE,
+                      warning=FALSE)
+```
+### At the beginning of the project, I've imported the libraries that I'm going to use
+```{r inport}
+library(ggplot2)
+library(dplyr)
+library(factoextra)
+library(cluster)
+library(datasets)
+library(stats)
+```
+
+### Next I've took the 'Iris' dataset and plot the 2 features of it: Petal Width and Petal Length
+#### In addition I've colored each point representing an iris flower according to the specie it belongs to.
+```{r plot}
+ggplot(iris, mapping = aes(x = iris$Sepal.Width, y = iris$Sepal.Length, color = iris$Species))+
+  geom_point() +
+  labs(title = "Scatter Plot of Sepal Width Vs Sepal Length",
+       subtitle = "Represent each point color according to  species' color",
+       x = "Sepal Width",
+       y = "Sepal Length")
+```
+
+
+### I've applied Principal Components Analysis to the 'Iris' dataset in order to see the potential number of clusters.
+```{r pca}
+iris_X <- iris[1:4]
+iris_y <- iris[5]
+
+pca <- prcomp(iris_X, scale= T, center = T)     # mantıksız oldugu icin iris datasetten devam ediyoruz
+
+fviz_pca_ind(pca, geom.ind = "point", pointshape = 23,
+             pointsize = 2, 
+             fill.ind = iris$Species, 
+             col.ind = "black", 
+             palette = "jco", 
+             addEllipses = TRUE,
+             label = "var",
+             col.var = "black",
+             repel = TRUE,
+             legend.title = "Iris Species") +
+  ggtitle("2D PCA-plot from 4 feature dataset") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+#### PCA is really important for dimensionality reduction, it may seems a little bit useless at the moment for this dataset, but if we had a lot of dimensions it would have been crucial for our upcoming algorithms to work fast and efficiently.
+
+#### After plotting the 2 dimensional representation of our dataset I've saw that 3 is the perfect number to use for the center parameter for my K Means Clustering algorithm.
+ 
+### I've applied K Means Clustering with 3 centers in orther to see if the machine can identify all the different groups properly
+```{r kmeans}
+set.seed(102)
+iris_kmeans <- kmeans(iris_X, 3)        # We use 3 because we already know that there are 3 classes
+iris_kmeans_clusters <- iris_kmeans$cluster
+iris_kmeans_clusters <- iris_kmeans$cluster %>% 
+    replace( iris_kmeans_clusters == 1, "virginica") %>% 
+    replace( iris_kmeans_clusters == 2, "setosa") %>% 
+    replace( iris_kmeans_clusters == 3, "versicolor")
+
+
+predicted_vs_true <- data.frame(iris_kmeans_clusters, iris_y)
+names(predicted_vs_true) <- c("Predicted", "True Value")
+predicted_vs_true$Final <- ifelse(as.factor(predicted_vs_true$Predicted) == as.factor(predicted_vs_true$`True Value`), T, F)
+head(predicted_vs_true)
+sum(predicted_vs_true$Final, na.rm = T) / count(predicted_vs_true) 
+```
+
+#### After taking a look at the 'iris_kmeans_clusters' vector I saw that each value was in the '1' , '2' or '3' cluster so I decided to change their values in order to compare them with my original 'species' value and saw that the clustering algorithm has done a fairly good job: 89.3% of accuracy
+
+### Finally I've done pretty much the same thing for Hierarchical Clustering
+#### After applying the hiearchical clustering algorithm I plotted a Cluster Dendogram of my data in order to visualize it
+```{r hc}
+d <- dist(iris, method = "euclidean")
+hc <- hclust(d, method="average")
+plot(hc, cex=0.6, hang=-1)
+
+hc_iris_predicted <- cutree(hc, k = 3, h = 3)
+hc_iris_predicted <- cutree(hc, k = 3, h = 3) %>% 
+  replace(hc_iris_predicted == 1, "setosa") %>% 
+  replace(hc_iris_predicted == 2, "versicolor") %>% 
+  replace(hc_iris_predicted == 3, "virginica")
+
+
+hc_predicted_vs_true <- data.frame(hc_iris_predicted, iris_y)
+names(hc_predicted_vs_true) <- c("Predicted", "True Value")
+hc_predicted_vs_true$final <- ifelse(as.factor(hc_predicted_vs_true$Predicted) == as.factor(hc_predicted_vs_true$`True Value`), T, F)
+
+sum(hc_predicted_vs_true$final, na.rm = T) / count(hc_predicted_vs_true)
+```
+
+#### I saw that there was a slightly better performance with hierarchical clustering, the accuracy of our algorithm to identify the flower's species, has rised from 89.3% to 90.7%

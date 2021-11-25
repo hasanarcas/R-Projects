@@ -4,7 +4,7 @@ library(factoextra)
 library(cluster)
 library(datasets)
 library(stats)
-options(digits = 10)
+
 
 ggplot(iris, mapping = aes(x = iris$Sepal.Width, y = iris$Sepal.Length, color = iris$Species))+
   geom_point() +
@@ -34,7 +34,7 @@ fviz_pca_ind(pca, geom.ind = "point", pointshape = 23,
 
 #K MEANS CLUSTERING
 
-set.seed(42)
+set.seed(102)
 iris_kmeans <- kmeans(iris_X, 3)        # We use 3 because we already know that there are 3 classes
 
 iris_kmeans_clusters <- iris_kmeans$cluster %>% 
