@@ -1,6 +1,7 @@
 library(rvest)
 library(dplyr)
 library(RCurl)
+library(pingr)
 
 #       New Releases
 
@@ -11,46 +12,44 @@ all_games_list <- page %>%
   html_text()
 
 games <- data.frame(matrix(ncol=5, nrow=0))
-col_names <- c("Name", "Developer", "Genres", "# Of Players", "Rating")
+col_names <- c("name", "point", "summary", "dev", "genre")
 colnames(games) <- col_names
 
+get_links <- function(game_link){
+  game_link <- game_link %>% 
+    gsub(" ", "-", ., fixed = T) %>%
+    gsub(":", "", ., fixed = T) %>%
+    gsub("'", "", ., fixed = T) %>% 
+    tolower()
+  
+  game_page <- paste("https://www.metacritic.com/game/pc/",game_link, sep = "")
+  return(game_page)
+}
+links <- sapply(all_games_list, get_links, USE.NAMES = F)
+
 get_game_features <- function(link){
-  features <- ""
-  if (url.exists(link)){
+    print(link)
     game_link <- read_html(link)
     features <- game_link %>% 
-      html_nodes("h1 , .product_rating .data , .product_players .data , .product_genre .label+ .data , .button") %>% 
+      html_nodes(".product_summary .data span , .product_genre .label+ .data , .button , .positive span , h1") %>% 
       html_text()
-    print(features)
-    if (length(features) == 5 ) {
-      games[nrow(games) + 1,] =  features
+    if(length(features) > 5){
+      features <- features[c(1, 2, 5, 8, 9)]
     }
-  }
-  print(features)
-  print(link)
-  return(games)
+    games[nrow(games) + 1,] =  features
+    return(games)
 }
 
-get_links <- function(game_link){
-    game_link <- game_link %>% 
-      gsub(" ", "-", ., fixed = T) %>%
-      gsub(":", "", ., fixed = T) %>%
-      gsub("'", "", ., fixed = T) %>% 
-      tolower()
-    
-    game_page <- paste("https://www.metacritic.com/game/pc/",game_link, sep = "")
-    return(game_page)
-  }
-  
-
-links <- sapply(all_games_list, get_links, USE.NAMES = F)
-links <- c("https//www.metacritic.com/game/pc/disco-elysium-the-final-cut", 
-           "https//www.metacritic.com/game/pc/forza-horizon-5",
-           "https//www.metacritic.com/game/pc/chicory-a-colorful-tale")
+links <- c("https://www.metacritic.com/game/pc/disco-elysium-the-final-cut", 
+           "https://www.metacritic.com/game/pc/forza-horizon-5",
+           "https://www.metacritic.com/game/pc/chicory-a-colorful-tale")
 
 games <- t(sapply(links, get_game_features, USE.NAMES = F))
 
-games <- get_game_features("https://www.metacritic.com/game/pc/disco-elysium-the-final-cut")
+games_df <- as.data.frame(games) %>% 
+  apply( 2, as.character)
 
-get_game_features("https://www.metacritic.com/game/pc/disco-elysium-the-final-cut")
+games_df_2 <- games_df
+
+#write.csv(games_df,"games_data.csv")
 
