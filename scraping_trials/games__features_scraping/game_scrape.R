@@ -1,12 +1,11 @@
 library(rvest)
 library(dplyr)
 library(RCurl)
-library(httr)
 #       New Releases
 fetch_new_releases <- function(){
-  all_games_link <- "https://www.metacritic.com/browse/games/score/metascore/year/pc/filtered"
+  all_games_link <- "https://www.metacritic.com/browse/games/score/metascore/all/pc/filtered?page=1"
   page <- read_html(all_games_link)
-  all_games_list <- page %>% 
+  all_games_list2 <- page %>% 
     html_nodes(".title h3") %>% 
     html_text()
   
@@ -24,7 +23,8 @@ fetch_new_releases <- function(){
     game_page <- paste("https://www.metacritic.com/game/pc/",game_link, sep = "")
     return(game_page)
   }
-  links <- sapply(all_games_list, get_links, USE.NAMES = F)
+  links1 <- sapply(all_games_list1, get_links, USE.NAMES = F)
+  links2 <- sapply(all_games_list2, get_links, USE.NAMES = F)
   
   get_game_features <- function(link){
     print(link)
@@ -43,23 +43,50 @@ fetch_new_releases <- function(){
              "https://www.metacritic.com/game/pc/forza-horizon-5",
              "https://www.metacritic.com/game/pc/chicory-a-colorful-tale")
   
+  links <- c(links1,links2)
   games <- t(sapply(links, get_game_features, USE.NAMES = F))
   
   games_df <- as.data.frame(games) %>% 
     apply( 2, as.character)
   
-  games_df_2 <- games_df
+  games_df_2 <- read.csv("best_games_data.csv")
   
-  #write.csv(games_df,"games_data.csv")
+  write.csv(games_df,"best_games_data.csv")
 }
 
 
 
 
 #       images for new releases
+fetch_images <- function(){
+  img_src1 <- read_html("https://www.metacritic.com/browse/games/score/metascore/all/pc/filtered") %>% 
+    html_nodes(".clamp-image-wrap a img") %>% 
+    html_attr("src")
+  
+  img_src2 <- read_html("https://www.metacritic.com/browse/games/score/metascore/all/pc/filtered?page=1") %>% 
+    html_nodes(".clamp-image-wrap a img") %>% 
+    html_attr("src")
+  
+  img_src <- c(img_src1, img_src2)
+  
+  all_games_list1 <- all_games_list1 %>% 
+    gsub(" ", "-", ., fixed = T) %>%
+    gsub(":", "", ., fixed = T) %>%
+    gsub("'", "", ., fixed = T) %>% 
+    tolower()
+  
+  all_games_list2 <- all_games_list2 %>% 
+    gsub(" ", "-", ., fixed = T) %>%
+    gsub(":", "", ., fixed = T) %>%
+    gsub("'", "", ., fixed = T) %>% 
+    tolower()
+  
+  all <- c(all_games_list1, all_games_list2)
+  x <- c(1:200)
+  for(i in x){
+    download.file(img_src[i], paste("./best_games_images/",all[i], ".jpg" ), mode = "wb")
+  }
+}
 
-session <- html_session("https://www.metacritic.com/game/pc/disco-elysium-the-final-cut") #for authentication
-img_src <- session %>%
-  read_html() %>%
-  html_node(xpath = '') %>%
-  html_attr("src")
+
+  
