@@ -89,4 +89,34 @@ fetch_images <- function(){
 }
 
 
+
+
+df <- read.csv("best_games_data.csv")
+df <- df[2:6]
+
+#name
+  df[195,1] <- "Streets of Rage 4: Mr. X Nightmare"
+  
+#points
+  df[195,2] <-88
+
+#summary
+  df[195,3] <- "The fight continues in Wood Oak City. After the events of Streets of Rage 4, our heroes wanted to prepare themselves for future threats. Axel, Blaze and their mates will start a very special deranged training with the help of Dr. Zan, who built an AI program from the remnants of Mister X’s brain that simulates every kind of danger they could be facing.
+With this new DLC, get ready for:
+• 3 new playable characters
+• A new Survival mode with weekly challenges
+• Character customization: build your own fighting style with new moves
+• New weapons and enemies!"
+  
+#dev
+  df[195,4] <- "Lizardcube"
+  
+#genre
+  df[195,5] <- "Action"
+  
+  
+  write.csv(df, "best_games_data.csv")
+
+
+
   
