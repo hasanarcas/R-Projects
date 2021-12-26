@@ -16,7 +16,8 @@ get_animal_link <- function(animals_list){
   return(animal_page)
 }
 
-links <- sapply(animals_list,get_animal_link,USE.NAMES = F)
+links <- sapply(animals_list[0:35],get_animal_link,USE.NAMES = F)
+links <- "https://a-z-animals.com/animals/albatross/"
 
 animals <- data.frame(matrix(ncol = 7, nrow = 0))
 col_names <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Scientific Name")
@@ -50,3 +51,9 @@ animals_df <- as.data.frame(animals) %>%
 animals <- read.csv("./taxonomy.csv")
 animals <- animals[2:8]
 
+
+for (row in c(1:nrow(animals))) {
+  if(animals[row,1] == "logical(0)"){
+    animals <- animals[-row, ]
+  }
+}
