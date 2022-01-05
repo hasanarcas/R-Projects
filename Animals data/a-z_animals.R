@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggthemes)
 library(showtext)
+library(scales)
 
 
 font_add_google("Gochi Hand", "gochi")
@@ -58,5 +59,22 @@ mammals %>%
   theme(axis.title = element_text(), text = element_text(family = "gochi", size = 15), axis.text.x = element_text(angle = 90))
 
 
+summary <- mammals %>% 
+  count(Scientific.Name, sort = T)
 
+mammals$Scientific.Name[mammals$Scientific.Name == "Canis lupus" | mammals$Scientific.Name == "Canis lupus familiaris"] <- "Canis Lupus"
+
+summary <- mammals %>% 
+  count(Scientific.Name, sort = T)
+
+canis <- filter(mammals, Genus == "Canis")
+
+class_gruped <- animals %>% count(Class, sort = T) %>% 
+  mutate(percentages= round(n / 936, 2))
+
+
+class_gruped[1:7,] %>% 
+  ggplot(aes(x="", y=n, fill= Class))+
+  geom_bar(width = 1, stat = "identity")+
+  coord_polar("y", start=0)
 
