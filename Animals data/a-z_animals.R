@@ -61,6 +61,7 @@ mammals %>%
 
 summary <- mammals %>% 
   count(Scientific.Name, sort = T)
+head(summary)
 
 mammals$Scientific.Name[mammals$Scientific.Name == "Canis lupus" | mammals$Scientific.Name == "Canis lupus familiaris"] <- "Canis Lupus"
 
@@ -71,10 +72,14 @@ canis <- filter(mammals, Genus == "Canis")
 
 class_gruped <- animals %>% count(Class, sort = T) %>% 
   mutate(percentages= round(n / 936, 2))
+class_gruped
 
 
 class_gruped[1:7,] %>% 
   ggplot(aes(x="", y=n, fill= Class))+
   geom_bar(width = 1, stat = "identity")+
-  coord_polar("y", start=0)
+  coord_polar("y", start=0)+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "gochi", size = 15), axis.text.x = element_text(angle = 90))
+
 

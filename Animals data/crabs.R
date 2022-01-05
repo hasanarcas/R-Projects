@@ -94,7 +94,6 @@ RMSE(predictions, crab_test_data_y)
 
 
 
-
 ############## CORRELATION MATRIX
 library(reshape2)
 res <- round(cor(m_crab[2:9]), 2)
