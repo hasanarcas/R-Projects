@@ -3,6 +3,8 @@ library(ggthemes)
 library(showtext)
 library(caret)
 library(randomForest)
+library(mice)
+library(nnet)
 
 font_add_google("Gochi Hand", "gochi")
 font_add_google("Schoolbell", "bell")
@@ -117,7 +119,76 @@ RMSE(new_predictions, crab_test_pca$Age)
 
 
 
+#############  DELETE DATA AND INPUTE     CANCEL 10000 CELLS OUT OF 31144
+no_of_NA <- 10000
+crab_convert_to_na <- crabs_df[2:9]
 
+for(i in c(1:no_of_NA)){
+  crab_convert_to_na[sample(nrow(crab_convert_to_na),1), sample(ncol(crab_convert_to_na), 1)] <- NA
+}
+
+sum(is.na(crab_convert_to_na))
+crabs_df <- as.data.frame(c(crabs_df[1], crab_convert_to_na))
+##### classification for missing
+crabs_df$Sex <- as.factor(crabs_df$Sex)
+crabs_omitted <- na.omit(crabs_df)
+set.seed(123)
+crabs_X <- crabs_omitted[2:9]
+crabs_y <- crabs_omitted[1]
+
+test_inds <- createDataPartition(crabs_y$Sex, p=0.2, list=F)
+crab_train_data <- crabs_omitted[-test_inds,]
+crab_test_data_X <- crabs_omitted[test_inds, 2:9]
+crab_test_data_y <- crabs_omitted[test_inds, 1]
+
+fit <- multinom(Sex ~ ., crab_train_data)
+
+predictions <- predict(fit, crab_test_data_X)
+
+t <- 0
+f <- 0
+for(i in c(1: length(predictions))){
+  if(predictions[i] == crab_test_data_y[i]){
+    t = t +1
+  }
+  else{
+    f = f +1
+  }
+}
+acc <-  t / (t + f)
+
+# predictive mean matching =  pmm
+imputed_crabs <- mice(crabs_df, m=5, maxit = 50, method = "pmm", seed= 42)
+imputed_crabs_df <- complete(imputed_crabs, 2)
+set.seed(123)
+crabs_X <- imputed_crabs_df[2:9]
+crabs_y <- imputed_crabs_df[1]
+
+test_inds <- createDataPartition(crabs_y$Sex, p=0.2, list=F)
+crab_train_data <- imputed_crabs_df[-test_inds,]
+crab_test_data_X <- imputed_crabs_df[test_inds, 2:9]
+crab_test_data_y <- imputed_crabs_df[test_inds, 1]
+
+fit <- multinom(Sex ~ ., crab_train_data)
+
+predictions <- predict(fit, crab_test_data_X)
+
+t <- 0
+f <- 0
+for(i in c(1: length(predictions))){
+  if(predictions[i] == crab_test_data_y[i]){
+    t = t +1
+  }
+  else{
+    f = f +1
+  }
+}
+acc <-  t / (t + f)
+
+
+
+############# MAKE DATA UNBALANCED
+table(crabs_df$Sex)
 
 
   
