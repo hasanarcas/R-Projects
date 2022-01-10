@@ -1,26 +1,35 @@
 ---
-title: <span style="color:red">Animals by Hasan Arcas</span>
-author: <span style="color:red">Hasan Arcas</span>
+title: <span style="color:red">Animals</span>
+author: <span style="color:red">By Hasan Arcas</span>
 date: <span style="color:red">12/30/2021</span>
 output:
   prettydoc::html_pretty:
     theme: cayman
     highlight: github
+    fig_crop: no
 ---
-## This is my final project's markdown, it will be about my favorite topic in the whole world, Animals!!
+# <span style="color:red"><b>This is my final project's markdown, it will be about my favorite topic in the whole world, Animals!!</b></span>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, 
                       message=FALSE,
                       warning=FALSE)
 ```
-### Firstly, we call all the libraries we are gone to use:
+### <span style="color:red">Firstly, we call all the libraries we are gone to use:</span>
 ```{r libraries}
-library(rvest)
-library(dplyr)
-library(RCurl) 
+library(tidyverse)
+library(ggthemes)
+library(showtext)
+library(scales)
+
+font_add_google("Schoolbell", "bell")
+showtext_auto()
 ```
 
+#### I decided to use the "bell" font-style from the "Schoolbell" font-family for my plots' texts.
+
+### <span style="color:red">Here there is the code written in order to scrape all the data that I need from the website 'https://a-z-animals.com/animals/'</span>
+#### All the code is commented out, because it would take a lot of time in order to scrape all the data
 ```{r animals_data_scraping}
 # link <- "https://a-z-animals.com/animals/"
 # page <- read_html(link)
@@ -62,9 +71,12 @@ library(RCurl)
 #   apply( 2, as.character)
 # write.csv(animals_df, "taxonomy.csv")
 
+```
+
+### <span style="color:red"><font size="6">We prepare our data by loading it to our working environment.</font></span>
+```{r prepare_data, fig.align='center'}
 animals <- read.csv("./datasets/taxonomy.csv")
 animals <- animals[2:8]
-
 
 for (row in c(1:nrow(animals))) {
   if(animals[row,1] == "logical(0)"){
@@ -73,4 +85,572 @@ for (row in c(1:nrow(animals))) {
 }
 knitr::kable(head(animals), format = "markdown")
 ```
+
+#### There were some minor errors while scraping the data (some data came damages for some reasons) so I decided to eliminate them directly.
+
+### <span style="color:red"><font size="6">Number of animals for each phylum</font></span>
+```{r animals_phylum, fig.align='center'}
+animals %>% 
+  ggplot(aes(x = Class, fill= Class))+
+  geom_bar()+
+  labs(title = "Number of animals for each Class",
+       subtitle = "Grouped by Class",
+       y = "Number of animals",
+       x = "Class")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15), axis.text.x = element_text(angle = 90))
+
+class_gruped <- animals %>% count(Class, sort = T) %>% 
+  mutate(percentages= round(n / 936, 2))
+
+class_gruped[1:7,] %>% 
+  ggplot(aes(x="", y=n, fill= Class))+
+  geom_bar(width = 1, stat = "identity")+
+  coord_polar("y", start=0)+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15), axis.text.x = element_text(angle = 90))
+```
+
+#### The bar chart shows the number of the members of each class, the pie chart shows only the first 7 classes because it would be a mess to show all the classes with low member numbers.
+#### By looking at this barplot and pie chart we can easily say that most of our animals are part of the phylum called <span style="color:red">Chordata</span>, which is a phylum of animals that includes the vertebrates together with the sea squirts and lancelets.
+
+
+### <span style="color:red"><font size="6">Number of animals for each Class</font></span>
+```{r animals_class, fig.align='center'}
+animals %>% 
+  ggplot(aes(x = Class, fill= Class))+
+  geom_bar()+
+  labs(title = "Number of animals for each Class",
+       subtitle = "Grouped by Class",
+       y = "Number of animals",
+       x = "Class")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15), axis.text.x = element_text(angle = 90))
+mammals <- filter(animals, Class == "Mammalia")
+```
+
+#### After noticing that most of our animals are <span style="color:red">Mammals</span>, I decided to look specifically to this class from now on.
+
+### <span style="color:red"><font size="6">Number of animals grouped by Order</font></span>
+```{r mammals, fig.align='center', fig.width=10}
+mammals %>% 
+  ggplot(aes(x= Order, fill= Order))+
+  geom_bar()+
+  labs(title = "Number of animals for each Order",
+       subtitle = "Grouped by Order",
+       y = "Number of animals",
+       x = "Order")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15), axis.text.x = element_text(angle = 90))
+
+mammals$Order[mammals$Order == " Carnivora" | mammals$Order == "Carnivors"] <- "Carnivora"
+mammals$Order[mammals$Order == "Artiodactlya"| mammals$Order == "Atriodactyla"] <- "Artiodactyla"
+
+```
+
+#### The first thing that we notice by looking at this plot, is that the Order <span style="color:red">Carnivora</span> is the most common one in our dataset, but we can notice something else if we look more carefully to our legend.
+#### Some of the Orders are misspelled, this leads to having a dirty data so that's why I tried to fix that in the last 2 lines.
+#### At this point we should ask ourselves, does this problem occurs elsewhere?
+
+### <span style="color:red"><font size="6">Checking problems in Scientific Names</font></span>
+```{r canis, fig.align='center'}
+summary <- mammals %>% 
+  count(Scientific.Name, sort = T)
+knitr::kable(head(summary), format = "markdown")
+
+mammals$Scientific.Name[mammals$Scientific.Name == "Canis lupus" | mammals$Scientific.Name == "Canis lupus familiaris"] <- "Canis Lupus"
+```
+
+#### A similar problem occured for the <span style="color:red">Canis Lupus</span> Scientific Name.
+#### Making this types of checks is really important, because there is dirty data everywhere, which is waiting to be cleaned...
+
+
+
+# <span style="color:red"><b>From now on we will continue with another dataset, and we will focus more on machine learning algorithms, rather than data exploratory analysis</b></span>
+
+### <span style="color:red">As usual, we call all the libraries we are gone to use before starting our projects</span>
+```{r libraries2}
+library(caret)
+library(randomForest)
+library(mice)
+library(nnet)
+library(smotefamily)
+library(ggfortify)
+library(reshape2)
+library(ggfortify)
+```
+
+
+### <span style="color:red"><font size="6">Data import and first preparations</font></span>
+```{r preparedata2}
+crabs_df <- read.csv("./datasets/CrabAgePrediction.csv")
+
+colnames(crabs_df)[6] <- "Shucked Weight"
+colnames(crabs_df)[7] <- "Viscera Weight"
+colnames(crabs_df)[8] <- "Shell Weight"
+
+foot_to_cm <- 30.48
+ounce_to_kg <- 0.0283495
+
+crabs_df$Length <- crabs_df$Length * foot_to_cm
+crabs_df$Diameter <- crabs_df$Diameter * foot_to_cm
+crabs_df$Height <- crabs_df$Height * foot_to_cm
+crabs_df$Weight <- crabs_df$Weight * ounce_to_kg
+crabs_df$`Shucked Weight` <- crabs_df$`Shucked Weight` * ounce_to_kg
+crabs_df$`Viscera Weight` <- crabs_df$`Viscera Weight` * ounce_to_kg
+crabs_df$`Shell Weight` <- crabs_df$`Shell Weight` * ounce_to_kg
+
+knitr::kable(head(crabs_df), format = "markdown")
+```
+
+#### I fixed some of the column names, and because all the values were in imperial system (foot and ounce) I converted all the values to a more comprehensible system, the only right system which is the metric one.
+
+### <span style="color:red"><font size="6">Choosing the right subset of our data</font></span>
+#### I've chosen to not work with all the data, because similar works were done with the same data. That's why I've decided to take a smaller subset of the data to work on.
+```{r mcrabs, fig.align='center'}
+crabs_df %>% 
+  ggplot(aes(x = Sex, fill= Sex))+ 
+  geom_bar() +
+  scale_fill_manual(values= c("#fc53d5", "#8c8f8f","#5d3ef7"))+
+  labs(title = "Number of crabs for each Sex group",
+       subtitle = "How many male, female and indeterminate crabs do we have in our dataset?",
+       y = "Number of crabs",
+       x = "Sex")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+m_crab <- filter(crabs_df, Sex == "M")
+```
+
+#### In order to choose the data I've decided to take the crabs based on one <span style="color:red">Sex</span>, it looks like the group that occurs more is the male group, so let's take all the male crabs.
+
+### <span style="color:red"><font size="6">Weight Distribution</font></span>
+#### I know I said that this part will be more focused on machine learning, but this chart is too cute not to be added here....
+```{r weight}
+m_crab %>% 
+  ggplot(aes(x = Weight,  fill=cut(Weight, 100))) +
+  geom_histogram( binwidth = 0.07, show.legend = F) +
+  scale_fill_discrete(h = c(240, 10), c = 120, l = 70)+
+  labs(title = "Number of crabs for the given Weight (kg)",
+       subtitle = "Binwidth is set to 0.07", 
+       x = "Weight (kg)",
+       y = "Number of crabs")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(),  text = element_text(family = "bell", size = 15))
+```
+
+### <span style="color:red"><font size="6">Trying to see if there is correlation</font></span>
+```{r diameter_weight, fig.align='center'}
+m_crab %>% 
+  ggplot(aes(x = Length, y = Diameter, color = Weight))+
+  geom_point() +
+  scale_color_gradientn(colors= rainbow(5)) + 
+  labs(title="Diameter Vs Length Vs Height",
+       subtitle = "Scatter plot of how Diameter and Height change based on the Length of Male crabs",
+       y = "Diameter (cm)",
+       x = "Lenght (cm)")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+```
+
+#### We can clearly see that there is a positive correlation between the height, the weight and the diameter of the crabs
+#### So maybe it will be wise to plot a heatmap in order to visualize the correlation between the attributes
+
+
+### <span style="color:red"><font size="6">Drawing a heatmap</font></span>
+```{r heatmap, fig.align='center'}
+res <- round(cor(m_crab[2:9]), 2)
+melted_corr <- melt(res)
+ggplot(melted_corr, aes(Var1, Var2, fill=value)) +
+  guides(x =  guide_axis(angle = 90)) +
+  scale_fill_continuous(type = "viridis")+
+  geom_tile()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+```
+
+#### Is it as clear as the day that all the attributes are somehow related with eachother, so maybe it would be a good idea to work with principal components.
+#### But we should try to work without PC first, in order to see how our results will change
+
+### <span style="color:red"><font size="6">Linear Regression with original data</font></span>
+```{r regression1, fig.align='center'}
+set.seed(42)
+crab_X <- m_crab[2:8]
+crab_y <- m_crab[9]
+test_inds <- createDataPartition(crab_y$Age, p=0.2, list=F)
+crab_train_data <- m_crab[-test_inds,2:9]
+crab_test_data_X <- m_crab[test_inds, 2:8]
+crab_test_data_y <- m_crab[test_inds, 9]
+fit <- lm(Age ~ .,data = crab_train_data)
+predictions <- fit %>% predict(crab_test_data_X)
+RMSE(predictions, crab_test_data_y)
+```
+
+#### I used RMSE (Root Mean Square Error) as the measure of the performance of our linear regression model
+#### Now let's try to create a model with principal components
+
+### <span style="color:red"><font size="6">PCA</font></span>
+```{r pca, fig.align='center'}
+PCA <- prcomp(crab_X, scale. = T, center = T)
+
+autoplot(PCA, data = m_crab, colour= "Age")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))+
+  scale_color_continuous(type = "viridis")
+
+var_explained_df <- data.frame(PC = paste0("PC", 1:7), var_explained = (PCA$sdev)^2 / sum((PCA$sdev)^2)) 
+var_explained_df %>%
+  ggplot(aes(x=PC,y=var_explained, group=1))+
+  geom_point(size=4)+
+  geom_line()+
+  labs(title="Scree plot: PCA on scaled data",
+       subtitle = "Using elbow method plotting to decide the number of PCA's to use")+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+summary(PCA)
+```
+
+#### We can easily see that 1 or 2 principal components explain most of the data, so we chose to take just the first 2 components (which explain %94 of the data)
+
+
+### <span style="color:red"><font size="6">Linear Regression with PCs</font></span>
+```{r regression2, fig.align='center'}
+pca <- as.data.frame(PCA$x[, 1:2])
+pca$Age <- m_crab$Age
+set.seed(101)
+crab_train_pca <- pca[-test_inds,]
+crab_test_pca <- pca[test_inds,]
+fit_pca <- lm(Age~ ., data= crab_train_pca)
+new_predictions <- fit_pca %>% predict(crab_test_pca)
+RMSE(new_predictions, crab_test_pca$Age)
+```
+
+#### Well that was unexpected, we used PCA because there was correlation between our attributes, but the RMSE incresed from 2.21 to 2.50 (smaller RMSE means more accurate model).
+#### So this explains that there are not stric rules in machine learning, applying PCA will not always boost the performans of your model.
+
+### <span style="color:red"><font size="6">Data imputation</font></span>
+#### From now on I started to use the original crabs data (not only the male ones) , because I'm gone to manually change it again.
+```{r delete}
+no_of_NA <- 10000
+crab_convert_to_na <- crabs_df[2:9]
+
+for(i in c(1:no_of_NA)){
+  crab_convert_to_na[sample(nrow(crab_convert_to_na),1), sample(ncol(crab_convert_to_na), 1)] <- NA
+}
+
+crabs_df_deleted <- as.data.frame(c(crabs_df[1], crab_convert_to_na))
+sum(is.na(crabs_df_deleted))
+```
+
+#### My data had 0 NA values, so in order to make data imputation I randomly cancelled some values. Now there are between 8000-9000 NA values.
+#### It's time to see if data imputation affects our model's performance.
+
+#### <span style="color:red">Classification with missing values</span>
+```{r classifcation1, , results='hide'}
+crabs_df$Sex <- as.factor(crabs_df_deleted$Sex)
+crabs_omitted <- na.omit(crabs_df_deleted)
+set.seed(123)
+crabs_X <- crabs_omitted[2:9]
+crabs_y <- crabs_omitted[1]
+test_inds <- createDataPartition(crabs_y$Sex, p=0.2, list=F)
+crab_train_data <- crabs_omitted[-test_inds,]
+crab_test_data_X <- crabs_omitted[test_inds, 2:9]
+crab_test_data_y <- crabs_omitted[test_inds, 1]
+
+fit.deleted <- multinom(Sex ~ ., crab_train_data)
+predictions.deleted <- predict(fit.deleted, crab_test_data_X)
+
+confusion_deleted <- table(predictions.deleted, crab_test_data_y)
+acc_deleted <- sum(diag(confusion_deleted)) / sum(confusion_deleted)
+precison_deleted <- diag(confusion_deleted) / rowSums(confusion_deleted)
+recall_deleted <- diag(confusion_deleted) / colSums(confusion_deleted)
+```
+
+#### <span style="color:red">Classification with imputed values</span>
+```{r classification2, results='hide'}
+imputed_crabs <- mice(crabs_df_deleted, m=5, maxit = 50, method = "pmm", seed= 42)
+imputed_crabs_df <- complete(imputed_crabs, 2)
+set.seed(123)
+crabs_X <- imputed_crabs_df[2:9]
+crabs_y <- imputed_crabs_df[1]
+
+test_inds <- createDataPartition(crabs_y$Sex, p=0.2, list=F)
+crab_train_data <- imputed_crabs_df[-test_inds,]
+crab_test_data_X <- imputed_crabs_df[test_inds, 2:9]
+crab_test_data_y <- imputed_crabs_df[test_inds, 1]
+
+fit.imputed <- multinom(Sex ~ ., crab_train_data)
+predictions.imputed <- predict(fit.imputed, crab_test_data_X)
+
+confusion_imputed <- table(predictions.imputed, crab_test_data_y)
+acc_imputed <- sum(diag(confusion_imputed)) / sum(confusion_imputed)
+precison_imputed <- diag(confusion_imputed) / rowSums(confusion_imputed)
+recall_imputed <- diag(confusion_imputed) / colSums(confusion_imputed)
+```
+
+#### I used multinomial logistic regression as my classification algorithm and used Accuracy, Precision and Recall to compare the performance of each model.
+
+#### <span style="color:red">Performance Comparison of missing vs imputed:</span>
+```{r comparison}
+comparison.accuracy <- t(data.frame(acc_deleted, acc_imputed))
+colnames(comparison.accuracy) <- "Accuracy"
+comparison.precision <- t(data.frame(precison_deleted, precison_imputed))
+comparison.recall <- t(data.frame(recall_deleted, recall_imputed))
+knitr::kable(comparison.accuracy, format = "markdown")
+knitr::kable(comparison.precision, format = "markdown")
+knitr::kable(comparison.recall, format = "markdown")
+```
+
+#### We can say, at least for this data, that imputation didn't affect too much our results.
+#### There were just minor changes in the performance of our models.
+
+### <span style="color:red"><font size="6">Dealing with Imbalanced Data</font></span>
+```{r imbalance}
+table(crabs_df$Sex)
+imbalanced_crabs <- crabs_df[-sample(which(crabs_df[, "Sex"] == "F"), 1000),]
+table(imbalanced_crabs$Sex)
+```
+#### My data was a balanced data, so in order to make it imbalanced I randomly cancelled some values from the female crabs.
+#### It's time to see if data imputation affects our model's performance.
+
+
+#### <span style="color:red">Classification with imbalanced data</span>
+```{r classification3, results='hide'}
+set.seed(1234)
+crabs_X <- imbalanced_crabs[2:9]
+crabs_y <- imbalanced_crabs[1]
+test_inds <- createDataPartition(crabs_y$Sex, p=0.2, list=F)
+crab_train_data <- imbalanced_crabs[-test_inds,]
+crab_test_data_X <- imbalanced_crabs[test_inds, 2:9]
+crab_test_data_y <- imbalanced_crabs[test_inds, 1]
+
+fit.imbalanced <- multinom(Sex ~ ., crab_train_data)
+predictions_imbalanced <- predict(fit.imbalanced, crab_test_data_X)
+
+confusion_imbalanced <- table(predictions_imbalanced, crab_test_data_y)
+acc_imbalanced <- sum(diag(confusion_imbalanced)) / sum(confusion_imbalanced)
+precison_imbalanced <- diag(confusion_imbalanced) / rowSums(confusion_imbalanced)
+recall_imbalanced <- diag(confusion_imbalanced) / colSums(confusion_imbalanced)
+```
+
+#### <span style="color:red">Oversampling the data using SMOTE</span>
+```{r oversampling, , results='hide'}
+oversampled_crabs <- SMOTE(imbalanced_crabs[2:9], imbalanced_crabs[1], dup_size = 4, )
+oversampled_crabs$data$class <- as.factor(oversampled_crabs$data$class)
+rename(oversampled_crabs$data, Sex = class) 
+```
+```{r table}
+table(oversampled_crabs$data$class)
+```
+
+
+#### <span style="color:red">Classification with oversampled data</span>
+```{r classification4, results='hide'}
+set.seed(1234)
+crabs_X <- oversampled_crabs$data[1:8]
+crabs_y <- oversampled_crabs$data[9]
+test_inds <- createDataPartition(crabs_y$class, p=0.2, list=F)
+crab_train_data <- oversampled_crabs$data[-test_inds,]
+crab_test_data_X <- oversampled_crabs$data[test_inds, 1:8]
+crab_test_data_y <- oversampled_crabs$data[test_inds, 9]
+
+fit <- multinom(class ~ ., crab_train_data)
+predictions_oversampled <- predict(fit, crab_test_data_X)
+
+confusion_oversampled <- table(predictions_oversampled, crab_test_data_y)
+acc_oversampled <- sum(diag(confusion_oversampled)) / sum(confusion_oversampled)
+precison_oversampled <- diag(confusion_oversampled) / rowSums(confusion_oversampled)
+recall_oversampled <- diag(confusion_oversampled) / colSums(confusion_oversampled)
+```
+
+#### I again used multinomial logistic regression as my classification algorithm and used Accuracy, Precision and Recall to compare the performance of each model.
+
+#### <span style="color:red">Performance Comparison between imbalanced vs oversampled:</span>
+```{r comparison2}
+comparison.accuracy <- t(data.frame(acc_imbalanced, acc_oversampled))
+colnames(comparison.accuracy) <- "Accuracy"
+comparison.precision <- t(data.frame(precison_imbalanced, precison_oversampled))
+comparison.recall <- t(data.frame(recall_imbalanced, recall_oversampled))
+knitr::kable(comparison.accuracy, format = "markdown")
+knitr::kable(comparison.precision, format = "markdown")
+knitr::kable(comparison.recall, format = "markdown")
+```
+
+#### Even it's accuracy is decreased, we should use the oversampled data because the accuracy of the imbalanced data is a little tricky.
+#### The accuracy seems high for the imbalanced data, but it is liked that only because it never respond as "F", we can see that from precision and recall.
+
+# <span style="color:red"><font size="6"><b>For the last part of the project I will change the data I'm using one more time</b></font></span>
+
+### <span style="color:red">We call the extra library that we are gone to use</span>
+```{r libraries3}
+library(janitor)
+library(randomForest)
+library(class)
+library(rpart)
+library(rpart.plot)
+library(factoextra)
+```
+
+### <span style="color:red"><font size="6">Data import and first preparations</font></span>
+```{r dataprep}
+zoo <- read.csv("./datasets/zoo.csv")
+class_types <- c("Mammal", "Bird", "Reptile", "Fish", "Amphibian", "Bug", "Invertebrate")
+
+for (variable in zoo$class_type){
+  zoo$class_type[zoo$class_type == variable] <- class_types[variable]
+}
+zoo$class_type <- as.factor(zoo$class_type)
+zoo_to_show <- cbind(zoo[1:11], zoo[18])
+knitr::kable(head(zoo_to_show), format = "markdown")
+zoo_total <- zoo_to_show %>% adorn_totals("row")
+knitr::kable(tail(zoo_total, n=1), format = "markdown")
+```
+
+#### I changed the target column of my data, originally it was from 1 to 7 where each number represents a class, now each class is represented by the appropriate name.
+#### I used zoo_to_show and omitted some columns because it was to large and did not fit on the screen.
+#### I added a last row where there is the sum of the occurences for each feature
+
+
+### <span style="color:red"><font size="6">Search for correlation between features</font></span>
+```{r corrsearch}
+res <- round(cor(zoo[2:17]), 2)
+melted_corr <- melt(res)
+ggplot(melted_corr, aes(Var1, Var2, fill=value)) +
+  scale_fill_continuous(type = "viridis")+
+  guides(x =  guide_axis(angle = 90)) +
+  geom_tile()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+
+```
+
+#### As we can see there is not much correlation between the attributes, so it won't be really useful to apply PCA.
+#### So it's better to directly move on and apply our algorithms to the original data.
+
+### <span style="color:red"><font size="6">Classification algorithms</font></span>
+#### I've decided to use decision tree and random forest as my classification algorithms.
+#### The reason to choose these 2 algorithms is because one consists of the other, so I was curious about the final results.
+
+#### <span style="color:red">Decision Tree Classifier</span>
+```{r tree, results='hide'}
+set.seed(42)
+test_inds <- createDataPartition(zoo$class_type, p=0.2, list=F)
+zoo_train_data <- zoo[-test_inds, 2:18]
+zoo_test_data_X <- zoo[test_inds, 2:17]
+zoo_test_data_y <- zoo[test_inds, 18]
+
+fit.tree <- rpart(class_type ~., zoo_train_data, method = "class")
+```
+
+#### We cab plot the tree structure to see how the model 'thinks'.
+```{r plottree}
+rpart.plot(fit.tree, extra = 106)
+predictions_tree <- predict(fit.tree, zoo_test_data_X, type = "class")  
+confusion_tree <- table(predictions_tree, zoo_test_data_y)
+acc_tree <- sum(diag(confusion_tree)) / sum(confusion_tree)
+precison_tree <- diag(confusion_tree) / rowSums(confusion_tree)
+recall_tree <- diag(confusion_tree) / colSums(confusion_tree)
+```
+
+#### Now let's try to use a Random Forest Classifier and after that let's compare the results.
+
+
+#### <span style="color:red">Random Forest Classifier</span>
+```{r forest}
+fit.forest <- randomForest(class_type ~., data = zoo_train_data)
+varImpPlot(fit.forest)
+prediction_forest <- predict(fit.forest, zoo_test_data_X)
+confusion_forest <- table(prediction_forest, zoo_test_data_y)
+acc_forest <- sum(diag(confusion_forest)) / sum(confusion_forest)
+precison_forest <- diag(confusion_forest) / rowSums(confusion_forest)
+recall_forest <- diag(confusion_forest) / colSums(confusion_forest)
+```
+
+#### By using varImpPlot() we can plot the Mean Decrease Gini for each feature, greater value means more importance in terms of reaching the target variable. 
+#### So we can see that the model will most probabily use milk, eggs or feathers variables as root note for each tree.
+
+
+#### <span style="color:red">Performance comparison between Tree and Random Forest classifiers</span>
+```{r comparison3}
+comparison.accuracy <- t(data.frame(acc_tree, acc_forest))
+colnames(comparison.accuracy) <- "Accuracy"
+comparison.precision <- t(data.frame(precison_tree, precison_forest))
+comparison.recall <- t(data.frame(recall_tree, recall_forest))
+knitr::kable(comparison.accuracy, format = "markdown")
+knitr::kable(comparison.precision, format = "markdown")
+knitr::kable(comparison.recall, format = "markdown")
+```
+
+#### We can easily say that random forest outperform decision trees, not really a big surprise because random forest is the 'Wisdom of the croud' version of the decision tree.
+
+### <span style="color:red"><font size="6">Clustering</font></span>
+#### In this section we will compare the performance of K Means Clustering algorithm and Hierarchical Clustering algorithm
+
+### <span style="color:red"><font size="6">K Means Clustering</font></span>
+```{r scale}
+set.seed(43)
+scaled_zoo <- scale(zoo[2:17])
+zoo <- cbind(zoo[1], scaled_zoo, zoo[18])
+zoo_X <- zoo[2:17]
+zoo_y <- zoo[18]
+```
+
+#### We scale our data because we need normalized data in order to use it with clustering algorithms.
+```{r kmeans}
+zoo.kmeans <- kmeans(zoo_X, 7)
+fviz_cluster(zoo.kmeans, data = zoo_X, ggtheme = theme_fivethirtyeight())+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15))
+zoo.kmeans.clusters <- zoo.kmeans$cluster
+confusion.kmeans <- table(zoo.kmeans.clusters, zoo_y[, 1])
+acc_kmeans <- sum(diag(confusion.kmeans)) / sum(confusion.kmeans)
+precison_kmeans <- diag(confusion.kmeans) / rowSums(confusion.kmeans)
+recall_kmeans <- diag(confusion.kmeans) / colSums(confusion.kmeans)
+```
+
+#### We can see immediately from the plot that ourK Means model will have some difficulties because some groups overlaps (2, 5, 7)
+
+### <span style="color:red"><font size="6">Hierarchical Clustering</font></span>
+```{r hc}
+d <- dist(zoo, method = "euclidean")
+zoo.hc <- hclust(d, method = "average")
+plot(zoo.hc, cex=0.6, hang = -1)
+
+plot(plot(fviz_nbclust(zoo_X, FUN = hcut, method = "wss"))+ 
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(), text = element_text(family = "bell", size = 15)))
+```
+
+#### The hierarchical model doesn't really seem to be able to separate well the data neither. By looking at the elbow plot we could try to choose between 4 and 6 clusters, but we know that we have 7 different classes, so we will chose 7 clusters.
+```{r hcpredict}
+zoo.hc.predicted <- cutree(zoo.hc, k=7, h=5)
+confusion.hc <- table(zoo.hc.predicted, zoo_y[, 1])
+acc_hc <- sum(diag(confusion.hc)) / sum(confusion.hc)
+precison_hc <- diag(confusion.hc) / rowSums(confusion.hc)
+recall_hc <- diag(confusion.hc) / colSums(confusion.hc)
+```
+
+#### <span style="color:red">Performance comparison between K Means and Hierarchical Clustering</span>
+```{r comparison4}
+comparison.accuracy <- t(data.frame(acc_kmeans, acc_hc))
+colnames(comparison.accuracy) <- "Accuracy"
+comparison.precision <- t(data.frame(precison_kmeans, precison_hc))
+comparison.recall <- t(data.frame(recall_kmeans, recall_hc))
+knitr::kable(comparison.accuracy, format = "markdown")
+knitr::kable(comparison.precision, format = "markdown")
+knitr::kable(comparison.recall, format = "markdown")
+```
+
+#### We can easily say that K Means Clustering outperforms Hierarchical Clustering in accuracy, precision and recall.
+#### It's better to use Hiearchical clustering algorithm if we don't know the number of classes that our dataset has.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
