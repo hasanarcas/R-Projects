@@ -1,0 +1,140 @@
+---
+title: "DATATHON - House Prices"
+author: "Hasan Arcas"
+date: "3/12/2022"
+output: html_document
+---
+
+# <span style="color:red"><b>Submission file for METU STATISTICS and DATA SCIENCE CLUB's Datathon preliminaries</b></span>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message=FALSE,
+                      warning=FALSE)
+```
+
+### <span style="color:red">Firstly, we call all the libraries we are gone to use:</span>
+```{r imports}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+df <- read.csv("data.set.csv",header = F)[1]
+```
+
+### <span style="color:red">Task 1 - Preparation of the dataframe</span>
+#### I've created an empty dataframe with 14 columns and named the columns according to the first row of our dataset, after that I created a For Loop in order to iterate through each element of each row by using the ";" delimeter. (External loop for iterating each row, internal loop for iterate each component of the row).
+```{r preprocess}
+data <- data.frame(matrix(ncol=14, nrow=1))
+colnames(data) <- c("Sütun1", "id", "fiyat", "oda_salon_sayisi", "net_m2", "bina_yasi", "isinma_tipi", "krediye_uygunluk", "bulundugu_kat", "banyo_sayisi", "ilce", "nüfus", "eðitim", "okuma_yazma_bilmeyen")
+
+for (i in c(2:4415)) {
+  if(lengths(strsplit(df[i,], ";")) == 14){
+    a = strsplit(df[i,], ";")
+    a <- do.call(rbind.data.frame, a)
+    for (j in c(1:14)){
+      data[i-1, j] <- a[1, j]
+    }
+  }
+}
+```
+
+### <span style="color:red">Task 1 - Fix data types</span>
+#### I've fixed all the data types of the columns because they were all strings, used strtoi() for numerical values, as.factor() for categorical values.
+```{r refactor}
+data$Sütun1 <- strtoi(data$Sütun1)
+data$id <- strtoi(data$id)
+data$fiyat <- strtoi(data$fiyat)
+data$oda_salon_sayisi <- strtoi(data$oda_salon_sayisi)
+data$net_m2 <- strtoi(data$net_m2)
+data$bina_yasi <- strtoi(data$bina_yasi)
+data$isinma_tipi <- as.factor(data$isinma_tipi)
+data$krediye_uygunluk <- as.factor(data$krediye_uygunluk)
+data$bulundugu_kat <- as.factor(data$bulundugu_kat)
+data$banyo_sayisi <- strtoi(data$banyo_sayisi)
+data$ilce <- as.factor(data$ilce)
+data$nüfus <- strtoi(data$nüfus)
+data$eðitim <- as.factor(data$eðitim)
+data$okuma_yazma_bilmeyen <- as.factor(data$okuma_yazma_bilmeyen)
+```
+
+### <span style="color:red">Task 2 - Correlation (Price - Size)</span>
+#### I've tried to see if there is some correlation between the house prices and the size of them, as we can see there is a positive correlation of %56 between the 2 variables, so we can say that there is a small positive linear correlation between them.
+#### I've created a scatter plot with the library ggplot2 and used the size (net_m2) as my X-axis and the price (fiyat) as my Y-axis. I've used alpha= 0.1 because too much data had gathered in one small place.
+```{r correlation}
+cor(data$fiyat, data$net_m2, use = "complete.obs")
+
+data %>%
+  ggplot(aes(net_m2, fiyat))+
+  geom_point(alpha = 0.1)+
+  labs(title="Price vs Net Square Meters",
+       subtitle = "Scatter plot of how the prices changes based on the size of the houses",
+       y = "Price (TL)",
+       x = "Size (Square Meter)")
+```
+
+
+### <span style="color:red">Task 3 - Number of houses with central heat system and above second floor grouped by districts</span>
+#### I've changed all the "Merkezi(PayÖlçer)" values to "Merkezi" and changed all the values for the floor number in order to make it so that I can use it as integer (in order to check all the floor numbers equals or greater than 2).
+#### I deleted all empty values by using na.omit() and changed "cankaya" into "çankaya" in order to have a more correct table.
+#### I used ggplot2 library in order to have a bar plot that displays all the different districts (ilce) in the X-axis and the number of houses in the Y-axis.
+```{r group1}
+central_heating <- data[data$isinma_tipi == "Merkezi(PayÖlçer)" | data$isinma_tipi == "Merkezi",]
+central_heating$bulundugu_kat <- as.character(central_heating$bulundugu_kat)
+for (i in c(1:length(central_heating$bulundugu_kat))) {
+  if(!is.na(central_heating$bulundugu_kat[i])){
+    if(!is.na(as.numeric(substr(central_heating$bulundugu_kat[i], 1,1)))){
+      central_heating$bulundugu_kat[i] <- strtoi(substr(central_heating$bulundugu_kat[i], 1,1))
+    }
+  }
+}
+
+central_above2 <- central_heating[strtoi(central_heating$bulundugu_kat) >= 2,]
+central_above2 <- na.omit(central_above2)
+central_above2$ilce[central_above2$ilce == "cankaya"] <- "Çankaya"
+number_per_district <- central_above2 %>% group_by(ilce) %>% summarise(number_of_houses=n())
+number_per_district <- number_per_district[2:6, ]
+
+number_per_district
+
+ggplot(central_above2, aes(x = ilce))+
+  geom_bar()
+```
+
+### <span style="color:red">Task 4 - Which district for a budget below 5000 and where there are a lot of undergraduate students?</span>
+#### I've searched for all the houses with price below 5000 TL and deleted all the rows where the price is empty by using na.omit().
+#### With the first ggplot() function we can see in the first bar plot that only Çankaya, Keçiören and Sincan have some houses which prices are below 5000.
+#### After searching even further for the districts that have Undergraduate (lisans) students we can clearly see from the second bar plot that only Çankaya satisfies this condition, so the best choice for someone who wants a house below 5000 TL and a neighbourhood with undergraduate students is a house in the Çankaya district.
+```{r group2}
+below_5000 <- data[data$fiyat < 5000,]
+below_5000 <- na.omit(below_5000)
+ggplot(below_5000, aes(x = ilce))+
+  geom_bar()
+below_5000_grouped <- below_5000 %>% group_by(ilce) %>% summarise(number_of_houses=n())
+
+below_undergraduate <- below_5000[as.character(below_5000$eðitim)== "Lisans",]
+ggplot(below_undergraduate, aes(x=ilce))+
+  geom_bar()
+```
+
+### <span style="color:red">Task 5 - Most affordable heating system for each district</span>
+#### I've again changed all "cankaya" values into "Çankaya" for having the best output.
+#### I've grouped my data by district names (ilce) and the heating systems (isinma_tipi) and I've found the mean price for each group by using the summirize() function and the mean() aggreate function.
+#### I omitted the first 3 rows because they were districts with no value inside (empty strings) and I ordered my new grouped dataframe by the mean price for each district by using the order() function.
+#### After printing the "ordered" dataframe and plotting its results, we can see that the most affordable systems are:
+#### <span style="color:red">Çankaya : </span> Kombi
+#### <span style="color:red">Keçiören : </span> Klima
+#### <span style="color:red">Mamak : </span> Kombi
+#### <span style="color:red">Sincan</span> Kombi
+#### (The empty type means that the system is not specified)
+```{r heating}
+data$ilce[data$ilce == "cankaya"] <- "Çankaya"
+districts <- na.omit(data %>% group_by(ilce, isinma_tipi))
+districts <- districts %>% summarise(mean_price=mean(fiyat))
+districts <- districts[4:21,]
+ordered <- districts[order(districts$ilce, districts$mean_price), ]
+ordered
+
+ggplot(ordered, aes(x=ilce, y=mean_price, fill= isinma_tipi))+
+  geom_bar(stat="identity",position="dodge")
+```
